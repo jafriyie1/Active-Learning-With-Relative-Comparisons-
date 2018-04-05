@@ -9,14 +9,14 @@ and Euclidean distance, clustering, and a Random Forest for building a distribut
 We then use this to find a means of maximizing the surprisal,or information of a triple to use to label new instances. This is a powerful method that will aid in our research efforts for creating better
 search algorithms.
 
-The following papers are used in this research (more will be added) 
+The following papers are used in this research (more will be added)
+
 [1] Xiong, S., Rosales, R., Pei, Y., & Fern, X. Z. (2014). 
 Active Metric Learning from Relative Comparisons. arXiv preprint arXiv:1409.4155.
 
 [2] Schultz, M., & Joachims, T. (2004). 
 Learning a distance metric from relative comparisons. 
 In Advances in neural information processing systems (pp. 41-48).
-
 
 [3]Tsang, I. W., Kwok, J. T., Bay, C., & Kong, H. (2003, June). Distance metric learning with kernels. 
 In Proceedings of the International Conference on Artificial Neural Networks (pp. 126-129).
