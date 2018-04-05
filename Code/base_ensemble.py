@@ -44,7 +44,7 @@ def prep_triple(df):
 def euclidean_distance_triple(triple):
     """ This function returns X features of
     triples and the label y that was suggested from
-    Schultz and Joakim relative comparison paper for
+    Schultz and Joachims relative comparison paper for
     Support Vector Machines
     input:
     triple (list of tuples) contains the triple
