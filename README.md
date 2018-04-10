@@ -20,3 +20,6 @@ In Advances in neural information processing systems (pp. 41-48).
 
 [3]Tsang, I. W., Kwok, J. T., Bay, C., & Kong, H. (2003, June). Distance metric learning with kernels. 
 In Proceedings of the International Conference on Artificial Neural Networks (pp. 126-129).
+
+[4] A. Frank and A. Asuncion. UCI machine learning repository,
+
