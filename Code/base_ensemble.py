@@ -10,6 +10,7 @@ from sklearn.svm import SVC
 from sklearn import metrics
 from sklearn import grid_search
 from sklearn.model_selection import train_test_split
+from random import sample
 
 
 
@@ -455,12 +456,70 @@ def equation_two_entropy(triplet, option, filename):
         h = h.reshape(1,-1)
         pred_class_labels, probs = pred_on_rel(h, option, filename)
         probs = probs[0]
+        #print(probs)
         for i in range(len(probs)):
             if probs[i] >0:
-                total+=probs[i]*math.log2(probs[i])
+                total+=probs[i]*math.log(probs[i], 15)
+                #print(total)
         final_total+= total
 
     return -1*final_total
+
+def equation_three_entropy(triplet, oracle_prob, option, filename): 
+    total = 0 
+    y1, y2, y3 = triplet
+    cond_prob = 1
+    sum_of_probs = 0
+
+    first_prob = 0 
+    if y1 == y2 and y1 != y3:
+        first_prob = 1
+
+    for h in triplet: 
+        h = np.array(h)
+        h = h.reshape(1,-1)
+        pred_class_labels, probs = pred_on_rel(h, option, filename)
+        probs =probs[0]
+        #print(probs)
+        for prob in probs:
+            cond_prob *= prob
+
+    #print(cond_prob)
+
+    for h in triplet:
+        h = np.array(h)
+        h = h.reshape(1,-1)
+        pred_class_labels, probs = pred_on_rel(h, option, filename)
+        probs = probs[0]
+        #for i in range(len(probs)):
+        #    total
+        # 
+        #print(first_prob)
+        #print(oracle_prob)
+        if oracle_prob != 0:
+            computed_prob = ((first_prob* cond_prob)/oracle_prob)
+            #print('computed: ', computed_prob)
+            if computed_prob >0:
+                sum_of_probs += (computed_prob * math.log(computed_prob, 15))
+            else:
+                sum_of_probs += computed_prob
+        else:
+            return 0 
+    
+    return -sum_of_probs
+
+    
+
+def information_surprisal(triplet, option, answer,
+                         eq_two, eq_three, filename): 
+    sum_answers = 0
+    answers = answer[:2]
+    first_part = answer[2]*eq_two
+    for a in answers:
+        sum_answers += a*eq_three
+
+    return first_part - sum_answers
+    
 
 
 
@@ -468,6 +527,7 @@ def oracle_answer(Rp, n_labels, option, filename):
     p_yes = []
     p_no = []
     p_dk = []
+    triples_and_mi = []
 
     for triplet in Rp:
         '''triple, _  = process_one_data_instance(triplet)
@@ -491,17 +551,26 @@ def oracle_answer(Rp, n_labels, option, filename):
         pred_class_labels_two, probs_two = pred_on_rel(x2, option, filename)
         pred_class_labels_three, probs_three = pred_on_rel(x3, option, filename)
 
+        associated_label = ""
+
+        if pred_class_labels == pred_class_labels_two and pred_class_labels != pred_class_labels_three:
+            associated_label = "yes"
+
+        elif pred_class_labels != pred_class_labels_two and pred_class_labels == pred_class_labels_three:
+            associated_label = 'no'
+        else: 
+            associated_label = 'dk'
         #print(x1)
-        print(pred_class_labels)
-        print(probs)
+        #print(pred_class_labels)
+        #print(probs)
 
         #print(x2)
-        print(pred_class_labels_two)
-        print(probs_two)
+        #print(pred_class_labels_two)
+        #print(probs_two)
 
         #print(x3)
-        print(pred_class_labels_three)
-        print(probs_two)
+        #print(pred_class_labels_three)
+        #print(probs_two)
 
         x1_info = (pred_class_labels, probs)
         x2_info = (pred_class_labels_two, probs_two)
@@ -509,13 +578,38 @@ def oracle_answer(Rp, n_labels, option, filename):
 
         oracle_prob = probability_estimates_given_triple(x1_info, x2_info, x3_info)
         yes ,no , dk = probability_estimates(x1_info, x2_info, x3_info)
+        prob_answers = (yes, no, dk)
 
-        info = equation_two_entropy(triplet, option, filename)
-        print(info)
+        eq_two = equation_two_entropy(triplet, option, filename)
+        eq_three = equation_three_entropy(triplet, oracle_prob, 
+                                            option, filename)
+
+        mutual_information = information_surprisal(triplet, option, prob_answers,
+                                                    eq_two, eq_three, filename)
+        
+        #print(mutual_information)
+        #print(info)
+        new_labels = (triplet, mutual_information, associated_label)
+        triples_and_mi.append(new_labels)
+
+        #print()
 
 
-        print()
+    max  = -1000000
+    pos = -1
+    for i, tuples in enumerate(triples_and_mi):
+        #print(tuples)
 
+        labels = tuples[0]
+        mi = tuples[1]
+        if mi > max:
+            max = mi
+            pos = i
+
+    add_to_Rl = triples_and_mi[i]
+    
+    print(add_to_Rl)
+    return add_to_Rl
         #triple_test = process_one_datapoint_instance(x1)
         #pred_class_labels, probs = pred_on_rel(triple_test, option)
 
@@ -536,7 +630,7 @@ def main():
         path = base_folder + datafile
         data = pd.read_csv(path)
         data = clean_data(data)
-
+        data =  data[100:120]
         pred_df = data[50:100]
         df = data
 
@@ -560,6 +654,7 @@ def main():
 
         datafile = str(input("Please input the datafile: ")).strip(" ")
         filename = str(input("Please output filename for model: ")).strip(" ")
+        number_of_queries = int(input("Please input the number of queries: "))
 
         base_folder = "../Data/"
         path = base_folder + datafile
@@ -569,9 +664,11 @@ def main():
 
         Ru = prep_triple(data)
 
-        # Initialize Rl and Ru
+        # Initialize Rl and Rp
         Rl = []
-        Rp = Ru[:10]
+
+        # Take random sample from Ru
+        Rp = sample(Ru, 100)
 
         # Use Section 3.5. This relies on the relative_comparison_distribution
         # function to do the distance metric learning for estimating the
@@ -579,9 +676,18 @@ def main():
         # We will use the oracle_answer() function to house the main
         # active learning algorithm
 
-        oracle_answer(Rp, 5, decision, filename)
+        for i in range(number_of_queries):
+            triple_point = oracle_answer(Rp, 5, decision, filename)
+            item_to_remove = triple_point[0]
+            Rl.append(triple_point)
+            
+            print(len(Rp))
+            if item_to_remove in Rp:
+                Rp.remove(item_to_remove)
 
-
+        print("Active Learning is finished: ")
+        print("Here are the labeled triples: ")
+        print(Rl)
 
 
 if __name__ == "__main__":
